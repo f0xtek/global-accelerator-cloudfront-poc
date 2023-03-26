@@ -1,9 +1,11 @@
-import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
+import { CfnOutput, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
+import { SecurityGroup } from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { NginxDistribution } from "./cloudfront/distribution";
 import { NginxInstance } from "./ec2/nginx";
 import { NginxInstanceGlobalAccelerator } from "./global-accelerator/nginx";
 import { Network } from "./network/network";
+import { authorizeIngressRuleFromPublicIp } from "./network/utils";
 
 export class GlobalAcceleratorCloudfrontStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -14,12 +16,26 @@ export class GlobalAcceleratorCloudfrontStack extends Stack {
       azs: this.availabilityZones,
     });
 
+    const securityGroup: SecurityGroup = new SecurityGroup(
+      this,
+      "nginxInstanceSG",
+      {
+        vpc: network.vpc,
+        allowAllOutbound: true,
+        securityGroupName: "nginxInstances",
+      }
+    );
+
+    securityGroup.applyRemovalPolicy(RemovalPolicy.DESTROY);
+    authorizeIngressRuleFromPublicIp(securityGroup, 80);
+
     const globalAcceleratorInstance: NginxInstance = new NginxInstance(
       this,
       "globalAcceleratorInstance",
       {
-        namePrefix: "global-accelerator",
+        namePrefix: "globalAccelerator",
         network,
+        securityGroup,
       }
     );
 
@@ -29,6 +45,7 @@ export class GlobalAcceleratorCloudfrontStack extends Stack {
       {
         namePrefix: "cloudfront",
         network,
+        securityGroup,
       }
     );
 
@@ -38,6 +55,7 @@ export class GlobalAcceleratorCloudfrontStack extends Stack {
       {
         namePrefix: "standard",
         network,
+        securityGroup,
       }
     );
 
