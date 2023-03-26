@@ -1,4 +1,9 @@
-import { Accelerator, Listener } from "aws-cdk-lib/aws-globalaccelerator";
+import { Duration, RemovalPolicy } from "aws-cdk-lib";
+import {
+  Accelerator,
+  HealthCheckProtocol,
+  Listener,
+} from "aws-cdk-lib/aws-globalaccelerator";
 import { InstanceEndpoint } from "aws-cdk-lib/aws-globalaccelerator-endpoints";
 import { Construct } from "constructs";
 import { NginxInstance } from "../ec2/nginx";
@@ -18,13 +23,15 @@ export class NginxInstanceGlobalAccelerator extends Construct {
   ) {
     super(scope, id);
 
+    const port: number = 80;
+
     this.accelerator = new Accelerator(scope, "accelerator", {
       enabled: true,
       acceleratorName: "nginxGlobalAccelerator",
     });
 
     this.listener = this.accelerator.addListener("Listener", {
-      portRanges: [{ fromPort: 80 }],
+      portRanges: [{ fromPort: port }],
     });
 
     this.listener.addEndpointGroup("globalAcceleratorInstances", {
@@ -34,7 +41,12 @@ export class NginxInstanceGlobalAccelerator extends Construct {
             preserveClientIp: true,
           })
       ),
+      healthCheckPath: "/",
+      healthCheckPort: port,
+      healthCheckInterval: Duration.seconds(30),
+      healthCheckProtocol: HealthCheckProtocol.TCP,
     });
+    this.listener.applyRemovalPolicy(RemovalPolicy.DESTROY);
   }
 
   get dnsName() {
