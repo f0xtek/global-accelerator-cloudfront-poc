@@ -15,7 +15,7 @@ const userData: UserData = UserData.forLinux();
 userData.addCommands(
   "set -euo pipefail",
   "yum update",
-  "yum install -y nginx",
+  "amazon-linux-extras install -y nginx1",
   "systemctl enable --now nginx"
 );
 
