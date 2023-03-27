@@ -1,4 +1,4 @@
-import { Vpc } from "aws-cdk-lib/aws-ec2";
+import { SubnetType, Vpc } from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 
 export interface NetworkProps {
@@ -13,6 +13,18 @@ export class Network extends Construct {
     super(scope, id);
     this.vpc = new Vpc(scope, "vpc", {
       availabilityZones: props.azs,
+      subnetConfiguration: [
+        {
+          cidrMask: 24,
+          subnetType: SubnetType.PUBLIC,
+          name: "public",
+        },
+        {
+          cidrMask: 24,
+          subnetType: SubnetType.PRIVATE_WITH_EGRESS,
+          name: "private",
+        },
+      ],
       enableDnsHostnames: true,
       enableDnsSupport: true,
       vpcName: props.name,
